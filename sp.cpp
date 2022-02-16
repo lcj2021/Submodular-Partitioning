@@ -109,7 +109,7 @@ public:
     void load(int part_cnt, string db_name, string tag, int db_id);
 };
 
-int 
+double 
 f(int i, set<string> miu, graph *G)
 {
     auto F = set<string>(G[i].ID2Entity.begin(), G[i].ID2Entity.end());
@@ -117,26 +117,26 @@ f(int i, set<string> miu, graph *G)
 	set<string> intersect;
 	intersect = s_inter(F, miu);	
     // for (auto it : intersect)   cout << it << endl;	puts("");
-	return intersect.size();
+	return (double)intersect.size();
 }
 
-int 
-F(int part_cnt, int c, vector<set<string> > V, vector<set<int> > pi, graph *G)
+double 
+F(int part_cnt, double c, vector<set<string> > V, vector<set<int> > pi, graph *G)
 {
-	int ret = 0;
+	double ret = 0;
 	for (int i = 1; i <= part_cnt; ++ i)
 	{
 		set<string > miu_i;
 		for (auto it : pi[i])	
 			miu_i.insert(V[it].begin(), V[it].end());
-		ret += min(f(i, miu_i, G), c);
+		ret += min((double)f(i, miu_i, G), c);
 	}
 	ret /= part_cnt;
 	return ret;
 }
 
 vector<set<int> >
-greed_swp(int part_cnt, int c, vector<set<string> > V, graph * G)
+greed_swp(int part_cnt, double c, vector<set<string> > V, graph * G)
 {
 	vector<set<int> > ret(part_cnt + 1);		// return val;
 	vector<set<string> > A(part_cnt + 1);
@@ -147,19 +147,18 @@ greed_swp(int part_cnt, int c, vector<set<string> > V, graph * G)
 	while (R_map.size())
 	{
 		int j_V = *R_map.begin(), j_A = 1;
-		int delta = -1;
+		double delta = -1;
 
 		cout << "round " << V.size() - R_map.size() << endl;
 
 		for (int i = 1; i <= part_cnt; ++ i)
 		{
-			int delta_i = -1;
-			int item2 = min(f(i, A[i], G), c), item1 = -1;
+			double item2 = min(f(i, A[i], G), c), item1 = -1;
 			for (auto r : R_map)
 			{
 				cout << "i=" << i << " r=" << r << "\t" << "max(min{fi(Ai U r), c})=" << min(f(i, s_union({A[i], V[r]}), G), c) << "\t" << "min{fi(Ai), c}=" << item2; 
 				item1 = max(min(f(i, s_union({A[i], V[r]}), G), c), item1);
-				int val = item1 - item2;
+				double val = item1 - item2;
 				if (val > delta)
 					delta = val, j_V = r, j_A = i;
 				cout << "\t" << "delta=" << val << endl;
@@ -176,25 +175,31 @@ greed_swp(int part_cnt, int c, vector<set<string> > V, graph * G)
 }
 
 vector<set<int> >
-greed_sat(int part_cnt, double epsilon, int alpha, vector<set<string> > V, graph * G)
+greed_sat(int part_cnt, double epsilon, double alpha, vector<set<string> > V, graph * G)
 {
 	vector<set<int> > ret(part_cnt + 1);		// return val;
 	set<string> V_set = s_union(V);
 	
-	int c_min = 0, c_max = 1e10;
+	double c_min = 0, c_max = 1e10;
 	for (int i = 1; i <= part_cnt; ++ i)
 		c_max = min(c_max, f(i, V_set, G));
 	// cout << c_min << " " << c_max << endl;
 
 	while (c_max - c_min >= epsilon)
 	{
-		int c = c_max + c_min >> 1;
+		double c = (c_max + c_min) / 2;
 		vector<set<int> > pi_c = greed_swp(part_cnt, c, V, G);
-		int F_c = F(part_cnt, c, V, pi_c, G);
+		double F_c = F(part_cnt, c, V, pi_c, G);
 
-		if (F_c < alpha * c)	c_max = c;
-		else					c_min = c; 
-		ret = pi_c;
+		if (F_c < alpha * c)	c_max = c, puts("left");
+		else					c_min = c, ret = pi_c, puts("right");
+		
+		for (int i = 1; i <= pi_c.size() - 1; ++ i)
+		{
+			for (auto it : pi_c[i])
+				cout << it << "\t";	
+			puts("");
+		}
 		cout << "c=" << c << "\t" << "c_max - c_min=" << c_max - c_min << endl;
 	}
 	return ret;
@@ -252,8 +257,8 @@ int main(int argc, char *argv[])
 	// vector<set<string> > miu = {set<string>(), miu1, miu2, miu3, miu4};
 	// vector<set<string> > miu = {set<string>(), miu1, miu2, miu3, miu4, miu5};
 	// vector<set<string> > miu = {set<string>(), miu1, miu2, miu3, miu4, miu5, miu6};
-	// vector<set<string> > miu = {set<string>(), miu1, miu2, miu3, miu4, miu5, miu6, miu7};
-	vector<set<string> > miu = {set<string>(), miu1, miu2, miu3, miu4, miu5, miu6, miu7, miu8};
+	vector<set<string> > miu = {set<string>(), miu1, miu2, miu3, miu4, miu5, miu6, miu7};
+	// vector<set<string> > miu = {set<string>(), miu1, miu2, miu3, miu4, miu5, miu6, miu7, miu8};
 
 	// vector<set<int> > swp1 = greed_swp(4, 2, miu, test);
 	// for (int i = 1; i <= part_cnt; ++ i)
@@ -265,7 +270,7 @@ int main(int argc, char *argv[])
 
 	// cout << F(4, 2, miu, swp1, test) << endl;
 
-	vector<set<int> > pi = greed_sat(part_cnt, 1.5, 1, miu, test);
+	vector<set<int> > pi = greed_sat(part_cnt, 1, 0.6321, miu, test);
 	for (int i = 1; i <= part_cnt; ++ i)
 	{
 		for (auto it : pi[i])
@@ -354,4 +359,3 @@ graph::init()
 
 // g++ sp.cpp -o sp -std=c++11
 // ./sp test_data 2 4 
-// 135805429
